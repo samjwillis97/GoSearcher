@@ -4,13 +4,47 @@ services:
   - name: Search Code/Name
     sourceFile: ./test.csv
     fileType: csv
-    primaryField: Business Name
+    primaryField:
+      - Business Name
     searchFields:
       - NEW CODE
       - Business Name
       - Email
       - Phone Number
       - Mobile Number
+    displayFields:
+      - NEW CODE
+      - Business Name
+      - Name
+      - Last Name
+      - Email
+      - Phone Number
+      - Mobile Number
+      - Office Address / Location
+    fieldSettings:
+      NEW CODE:
+        display: Code
+      Business Name:
+        display: Business
+      Name:
+        display: First Name
+      Office Address / Location:
+        display: Address
+      Phone Number:
+        display: Phone
+      Mobile Number:
+        display: Mobile
+    fileSettings:
+      numberSkipRows: 2
+  - name: Search Contact
+    sourceFile: ./test.csv
+    fileType: csv
+    primaryField:
+      - Name
+      - Last Name
+    searchFields:
+      - Name
+      - Last Name
     displayFields:
       - NEW CODE
       - Business Name

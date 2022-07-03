@@ -13,8 +13,14 @@ import (
 func createInfoWindow(data map[string]string, S Service) fyne.Window {
 
 	var windowName string
-	if S.PrimaryField != "" {
-		windowName = data[S.PrimaryField]
+	if len(S.PrimaryField) > 0 {
+		if len(S.PrimaryField) > 1 {
+			for _, val := range S.PrimaryField {
+				windowName = windowName + data[val] + " "
+			}
+		} else {
+			windowName = data[S.PrimaryField[0]]
+		}
 	} else if len(S.DisplayFields) > 0 {
 		windowName = data[S.DisplayFields[0]]
 	} else {

@@ -16,7 +16,7 @@ type Service struct {
 	Name          string
 	SourceFile    string
 	FileType      string
-	PrimaryField  string
+	PrimaryField  []string
 	SearchFields  []string
 	DisplayFields []string
 	FieldSettings map[string]FieldSettings

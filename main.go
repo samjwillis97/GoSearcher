@@ -44,8 +44,9 @@ func setupMenu() *fyne.Menu {
 	var menus []*fyne.MenuItem
 
 	for _, service := range Services {
-		menus = append(menus, fyne.NewMenuItem(service.Name, func() {
-			searchInterface(service)
+		serviceToAssign := service
+		menus = append(menus, fyne.NewMenuItem(serviceToAssign.Name, func() {
+			searchInterface(serviceToAssign)
 		}))
 	}
 
@@ -78,8 +79,16 @@ func setupWindow(w fyne.Window, S Service) {
 					log.Printf("error unmarshalling json: %v\n", err)
 				}
 
-				if S.PrimaryField != "" {
-					o.(*widget.Button).SetText(value[S.PrimaryField])
+				if len(S.PrimaryField) > 0 {
+					var text string
+					if len(S.PrimaryField) > 1 {
+						for _, val := range S.PrimaryField {
+							text = text + value[val] + " "
+						}
+					} else {
+						text = value[S.PrimaryField[0]]
+					}
+					o.(*widget.Button).SetText(text)
 				} else if len(S.DisplayFields) > 0 {
 					o.(*widget.Button).SetText(value[S.DisplayFields[0]])
 				} else {
@@ -173,6 +182,8 @@ func setupWindow(w fyne.Window, S Service) {
 
 func searchInterface(s Service) {
 	// Implementation loads data into memory
+	log.Println(s)
+
 	s.loadData()
 
 	w = a.NewWindow(s.Name)
