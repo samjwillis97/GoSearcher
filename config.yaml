@@ -1,0 +1,4 @@
+sourceFile: ./test.csv
+maxEntriesShown: 10
+clearOnHide: true
+# Skip Rows
