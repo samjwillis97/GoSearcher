@@ -10,11 +10,20 @@ import (
 	"strconv"
 )
 
-func createInfoWindow(data clientData) fyne.Window {
-	newWindow := a.NewWindow(data.BusinessName)
+func createInfoWindow(data map[string]string, S Service) fyne.Window {
+
+	var windowName string
+	if S.PrimaryField != "" {
+		windowName = data[S.PrimaryField]
+	} else if len(S.DisplayFields) > 0 {
+		windowName = data[S.DisplayFields[0]]
+	} else {
+		windowName = data[S.SearchFields[0]]
+	}
+
+	newWindow := a.NewWindow(windowName)
 	desiredWidth := float32(500)
 
-	dataMap, dataFields, _ := ToMap(data, "struct")
 	form := widget.NewForm()
 	shortCuts := map[fyne.Shortcut]func(shortcut fyne.Shortcut){}
 
@@ -26,53 +35,48 @@ func createInfoWindow(data clientData) fyne.Window {
 
 	i := 0
 	//for key, val := range dataMap {
-	for _, key := range dataFields {
-		stringVal := ""
-		switch val := dataMap[key].(type) {
-		case string:
-			stringVal = val
-		case int:
-			stringVal = strconv.Itoa(val)
+	for _, key := range S.DisplayFields {
+		// TODO: Add keybinding (Ctrl + 1) copies first field
+		i++
+
+		newWidget := widget.NewEntry()
+		newWidget.Text = data[key]
+
+		fieldDisplayName := key
+		if val, ok := S.FieldSettings[key]; ok {
+			fieldDisplayName = val.Display
 		}
-		if stringVal != "" {
-			// TODO: Add keybinding (Ctrl + 1) copies first field
-			i++
 
-			fieldName := key
-			newWidget := widget.NewEntry()
-			newWidget.Text = stringVal
-
-			copyCallback := func() {
-				newWindow.Clipboard().SetContent(stringVal)
-				a.SendNotification(
-					fyne.NewNotification(
-						"Content Copied",
-						fmt.Sprintf("%s copied to clipboard.", snakeToDisplay(fieldName)),
-					),
-				)
-				newWindow.Close()
-			}
-
-			buttonLabel := ""
-
-			if i < 10 {
-				keyString := strconv.Itoa(i)
-				copyKey := &desktop.CustomShortcut{KeyName: fyne.KeyName(keyString), Modifier: fyne.KeyModifierSuper}
-				shortCuts[copyKey] = func(shortcut fyne.Shortcut) {
-					copyCallback()
-				}
-				buttonLabel = " - " + keyString
-			}
-
-			widgetCopy := widget.NewButtonWithIcon(buttonLabel, copyIcon, copyCallback)
-
-			widgetContent := container.New(layout.NewBorderLayout(nil, nil, nil, widgetCopy), newWidget, widgetCopy)
-			newItem := widget.FormItem{
-				Text:   snakeToDisplay(key),
-				Widget: widgetContent,
-			}
-			form.AppendItem(&newItem)
+		copyCallback := func() {
+			newWindow.Clipboard().SetContent(data[key])
+			a.SendNotification(
+				fyne.NewNotification(
+					"Content Copied",
+					fmt.Sprintf("%s copied to clipboard.", fieldDisplayName),
+				),
+			)
+			newWindow.Close()
 		}
+
+		buttonLabel := ""
+
+		if i < 10 {
+			keyString := strconv.Itoa(i)
+			copyKey := &desktop.CustomShortcut{KeyName: fyne.KeyName(keyString), Modifier: fyne.KeyModifierSuper}
+			shortCuts[copyKey] = func(shortcut fyne.Shortcut) {
+				copyCallback()
+			}
+			buttonLabel = " - " + keyString
+		}
+
+		widgetCopy := widget.NewButtonWithIcon(buttonLabel, copyIcon, copyCallback)
+
+		widgetContent := container.New(layout.NewBorderLayout(nil, nil, nil, widgetCopy), newWidget, widgetCopy)
+		newItem := widget.FormItem{
+			Text:   fieldDisplayName,
+			Widget: widgetContent,
+		}
+		form.AppendItem(&newItem)
 	}
 
 	newWindow.SetContent(form)
