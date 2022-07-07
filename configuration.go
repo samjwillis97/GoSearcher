@@ -30,6 +30,7 @@ var C Configuration
 var Services []Service
 
 func setupConfig() {
+	// TODO: Change Config location depending on system
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 }
@@ -84,3 +85,5 @@ func readConfig() {
 
 	return
 }
+
+// TODO: Add functions to grab default values for fallback purposes
