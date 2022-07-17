@@ -13,17 +13,18 @@ type Configuration struct {
 }
 
 type Service struct {
-	Name          string
-	SourceFile    string
-	FileType      string
-	PrimaryField  []string
-	SearchFields  []string
-	DisplayFields []string
-	FieldSettings map[string]FieldSettings
+	Name       string
+	SourceFile string
+	FileType   string
+	Fields     []FieldSettings
 }
 
 type FieldSettings struct {
-	Display string
+	Name        string
+	DisplayName string
+	Search      bool
+	Primary     bool
+	Display     bool
 }
 
 var C Configuration
@@ -86,4 +87,58 @@ func readConfig() {
 	return
 }
 
-// TODO: Add functions to grab default values for fallback purposes
+func (s *Service) GetPrimaryFields() []string {
+	var fields []string
+	for _, val := range s.Fields {
+		if val.Primary {
+			fields = append(fields, val.Name)
+		}
+	}
+	if len(fields) > 0 {
+		return fields
+	}
+	if len(s.GetDisplayFields()) > 0 {
+		return []string{s.GetDisplayFields()[0]}
+	}
+	if len(s.GetSearchFields()) > 0 {
+		return []string{s.GetSearchFields()[0]}
+	}
+	return nil
+}
+
+func (s *Service) GetDisplayFields() []string {
+	var fields []string
+	for _, val := range s.Fields {
+		if val.Display {
+			fields = append(fields, val.Name)
+		} else if val.DisplayName != "" {
+			fields = append(fields, val.Name)
+		}
+	}
+	if len(fields) > 0 {
+		for _, val := range s.Fields {
+			fields = append(fields, val.Name)
+		}
+	}
+	return fields
+}
+
+func (s *Service) GetSearchFields() []string {
+	var fields []string
+	for _, val := range s.Fields {
+		if val.Search {
+			fields = append(fields, val.Name)
+		}
+	}
+	if len(fields) == 0 {
+		// TODO: Error out
+	}
+	return fields
+}
+
+func (f *FieldSettings) GetDisplayName() string {
+	if f.DisplayName == "" {
+		return f.Name
+	}
+	return f.DisplayName
+}

@@ -13,18 +13,15 @@ import (
 func createInfoWindow(data map[string]string, S Service) fyne.Window {
 
 	var windowName string
-	if len(S.PrimaryField) > 0 {
-		if len(S.PrimaryField) > 1 {
-			for _, val := range S.PrimaryField {
+	var primaryFields = S.GetPrimaryFields()
+	if len(primaryFields) > 0 {
+		if len(primaryFields) > 1 {
+			for _, val := range primaryFields {
 				windowName = windowName + data[val] + " "
 			}
 		} else {
-			windowName = data[S.PrimaryField[0]]
+			windowName = data[primaryFields[0]]
 		}
-	} else if len(S.DisplayFields) > 0 {
-		windowName = data[S.DisplayFields[0]]
-	} else {
-		windowName = data[S.SearchFields[0]]
 	}
 
 	newWindow := a.NewWindow(windowName)
@@ -41,24 +38,19 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 
 	i := 0
 	//for key, val := range dataMap {
-	for _, key := range S.DisplayFields {
+	for _, val := range S.GetDisplayFields() {
 		// TODO: Add keybinding (Ctrl + 1) copies first field
 		i++
 
 		newWidget := widget.NewEntry()
-		newWidget.Text = data[key]
-
-		fieldDisplayName := key
-		if val, ok := S.FieldSettings[key]; ok {
-			fieldDisplayName = val.Display
-		}
+		newWidget.Text = data[val]
 
 		copyCallback := func() {
-			newWindow.Clipboard().SetContent(data[key])
+			newWindow.Clipboard().SetContent(data[val])
 			a.SendNotification(
 				fyne.NewNotification(
 					"Content Copied",
-					fmt.Sprintf("%s copied to clipboard.", fieldDisplayName),
+					fmt.Sprintf("%s copied to clipboard.", val),
 				),
 			)
 			newWindow.Close()
@@ -79,7 +71,7 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 
 		widgetContent := container.New(layout.NewBorderLayout(nil, nil, nil, widgetCopy), newWidget, widgetCopy)
 		newItem := widget.FormItem{
-			Text:   fieldDisplayName,
+			Text:   val,
 			Widget: widgetContent,
 		}
 		form.AppendItem(&newItem)

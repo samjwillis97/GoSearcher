@@ -79,20 +79,17 @@ func setupWindow(w fyne.Window, S Service) {
 					log.Printf("error unmarshalling json: %v\n", err)
 				}
 
-				if len(S.PrimaryField) > 0 {
+				var primaryField = S.GetPrimaryFields()
+				if len(primaryField) > 0 {
 					var text string
-					if len(S.PrimaryField) > 1 {
-						for _, val := range S.PrimaryField {
+					if len(primaryField) > 1 {
+						for _, val := range primaryField {
 							text = text + value[val] + " "
 						}
 					} else {
-						text = value[S.PrimaryField[0]]
+						text = value[primaryField[0]]
 					}
 					o.(*widget.Button).SetText(text)
-				} else if len(S.DisplayFields) > 0 {
-					o.(*widget.Button).SetText(value[S.DisplayFields[0]])
-				} else {
-					o.(*widget.Button).SetText(value[S.SearchFields[0]])
 				}
 
 				callBackFn := func() {

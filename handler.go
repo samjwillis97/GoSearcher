@@ -67,12 +67,12 @@ func (s *Service) loadFromCSV(f *os.File) {
 		var dataSetEntry = map[string]string{}
 		for j, col := range row {
 			if i == 0 { // Header Row
-				for _, val := range s.SearchFields {
+				for _, val := range s.GetSearchFields() {
 					if col == val {
 						searchCols[j] = val
 					}
 				}
-				for _, val := range s.DisplayFields {
+				for _, val := range s.GetDisplayFields() {
 					if col == val {
 						displayCols[j] = val
 					}
