@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -26,18 +26,16 @@ func main() {
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		readConfig()
 	})
-	readConfig()
-	viper.WatchConfig()
 
-	readCSV(viper.GetString("sourceFile"))
+	setupConfig()
+	readConfig()
+
+	viper.WatchConfig()
 
 	a = app.New()
 	if desk, ok := a.(desktop.App); ok {
 		desk.SetSystemTrayMenu(setupMenu())
 	}
-
-	w = a.NewWindow("Client Search")
-	setupWindow(w)
 
 	a.Run()
 }
@@ -45,17 +43,21 @@ func main() {
 func setupMenu() *fyne.Menu {
 	var menus []*fyne.MenuItem
 
-	menus = append(menus, fyne.NewMenuItem("Search", searchInterface))
-	menus = append(menus, fyne.NewMenuItem("Refresh Source", refreshSource))
+	for _, service := range Services {
+		serviceToAssign := service
+		menus = append(menus, fyne.NewMenuItem(serviceToAssign.Name, func() {
+			searchInterface(serviceToAssign)
+		}))
+	}
 
 	return fyne.NewMenu("Menu :)", menus...)
 }
 
-func setupWindow(w fyne.Window) {
+func setupWindow(w fyne.Window, S Service) {
 	input := widget.NewEntry()
 	input.SetPlaceHolder("Enter Text...")
 
-	initData := make([]interface{}, 3)
+	initData := make([]interface{}, 0)
 	data := binding.BindUntypedList(&initData)
 
 	list := widget.NewListWithData(
@@ -69,14 +71,34 @@ func setupWindow(w fyne.Window) {
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			item, _ := i.(binding.Untyped).Get()
 			switch item := item.(type) {
-			case clientData:
+			case string:
+				var value map[string]string
+				byteValue := []byte(item)
+				err := json.Unmarshal(byteValue, &value)
+				if err != nil {
+					log.Printf("error unmarshalling json: %v\n", err)
+				}
+
+				var primaryField = S.GetPrimaryFields()
+				if len(primaryField) > 0 {
+					var text string
+					if len(primaryField) > 1 {
+						for _, val := range primaryField {
+							text = text + value[val] + " "
+						}
+					} else {
+						text = value[primaryField[0]]
+					}
+					o.(*widget.Button).SetText(text)
+				}
+
 				callBackFn := func() {
 					// TODO: New Window here !
-					window := createInfoWindow(item)
+					window := createInfoWindow(value, S)
 					if window != nil {
 						window.Show()
 					}
-					if viper.GetBool("clearOnHide") {
+					if C.ClearOnHide {
 						input.SetText("")
 						_ = data.Set([]interface{}{})
 					}
@@ -87,9 +109,7 @@ func setupWindow(w fyne.Window) {
 						Height: 0,
 					})
 				}
-				o.(*widget.Button).SetText(item.BusinessName)
 				o.(*widget.Button).OnTapped = callBackFn
-				// FIXME: Try make enter click the button - space currently does
 			}
 		},
 	)
@@ -112,33 +132,35 @@ func setupWindow(w fyne.Window) {
 	w.CenterOnScreen()
 
 	w.SetCloseIntercept(func() {
-		if viper.GetBool("clearOnHide") {
-			input.SetText("")
-			_ = data.Set([]interface{}{})
-		}
-		input.SetPlaceHolder("Enter Text...")
-		w.Hide()
-		w.Resize(fyne.Size{
-			Width:  500,
-			Height: 0,
-		})
+		w.Close()
+
+		// Clear out memory
+		dataSet = []map[string]string{}
+		searchData = []string{}
 	})
 
 	w.Canvas().Focus(input) // FIXME
 	w.Canvas().Unfocus()
 
 	input.OnChanged = func(s string) {
-		results := searchStruct(s)
+		results := searchCurrentData(s)
 
 		var newData []interface{}
 		for _, val := range results {
-			newData = append(newData, val)
+			jsonBytes, err := json.Marshal(val)
+			if err != nil {
+				log.Printf("error json.Marshal: %v\n", err)
+			}
+			jsonString := string(jsonBytes)
+			// value appended to newData must be comparable
+			// could use indices instead lol
+			newData = append(newData, jsonString)
 		}
 
 		if len(newData) > 0 {
 			_ = data.Set(newData)
 
-			maxShown := float32(viper.GetInt("maxEntriesShown") - 1)
+			maxShown := float32(C.MaxEntries - 1)
 			baseListHeight := list.MinSize().Height
 			newListHeight := maxShown * baseListHeight
 
@@ -155,42 +177,11 @@ func setupWindow(w fyne.Window) {
 	}
 }
 
-func searchInterface() {
+func searchInterface(s Service) {
+	s.loadData()
+	w = a.NewWindow(s.Name)
+	setupWindow(w, s)
 	w.Show()
 	w.CenterOnScreen()
 	w.RequestFocus()
-}
-
-func refreshSource() {
-	readCSV(viper.Get("sourceFile").(string))
-	a.SendNotification(
-		fyne.NewNotification(
-			"Source Refreshed",
-			"Source successfully refreshed",
-		),
-	)
-}
-
-func readConfig() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			a.SendNotification(
-				fyne.NewNotification(
-					"Config File Not Found",
-					"Reading of config file failed.",
-				),
-			)
-		}
-		panic(fmt.Errorf("error in readConfig viper: %v", err))
-	}
-
-	return
-}
-
-func onExit() {
-	log.Println("Exiting")
-	log.Println("Clean me up")
-	// clean up here
 }
