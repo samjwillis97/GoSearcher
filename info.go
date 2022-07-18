@@ -33,12 +33,12 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 	form := widget.NewForm()
 	shortCuts := map[fyne.Shortcut]func(shortcut fyne.Shortcut){}
 
-	copyIcon, err := fyne.LoadResourceFromPath("./content_copy.svg")
+	copyIcon, err := fyne.LoadResourceFromPath("./icons/content_copy.svg")
 	if err != nil {
 		panic(err)
 	}
 
-	qrIcon, err := fyne.LoadResourceFromPath("./qr_icon.svg")
+	qrIcon, err := fyne.LoadResourceFromPath("./icons/qr_icon.svg")
 	if err != nil {
 		panic(err)
 	}
