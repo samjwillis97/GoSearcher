@@ -13,10 +13,11 @@ type Configuration struct {
 }
 
 type Service struct {
-	Name       string
-	SourceFile string
-	FileType   string
-	Fields     []FieldSettings
+	Name         string
+	SourceFile   string
+	FileType     string
+	Fields       []FieldSettings
+	FileSettings FileSettings
 }
 
 type FieldSettings struct {
@@ -26,6 +27,11 @@ type FieldSettings struct {
 	Primary     bool
 	Display     bool
 	Qr          QRSettings
+}
+
+type FileSettings struct {
+	Sheet            string
+	NumberOfSkipRows int
 }
 
 type QRSettings struct {

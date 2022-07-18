@@ -20,6 +20,7 @@
 # Go workspace file
 go.work
 
+CLIENT_INFO.xlsx
 test.csv
 .idea/
 .DS_Store
