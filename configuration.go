@@ -25,6 +25,11 @@ type FieldSettings struct {
 	Search      bool
 	Primary     bool
 	Display     bool
+	Qr          QRSettings
+}
+
+type QRSettings struct {
+	TemplateString string
 }
 
 var C Configuration
@@ -98,7 +103,7 @@ func (s *Service) GetPrimaryFields() []string {
 		return fields
 	}
 	if len(s.GetDisplayFields()) > 0 {
-		return []string{s.GetDisplayFields()[0]}
+		return []string{s.GetDisplayFields()[0].Name}
 	}
 	if len(s.GetSearchFields()) > 0 {
 		return []string{s.GetSearchFields()[0]}
@@ -106,18 +111,18 @@ func (s *Service) GetPrimaryFields() []string {
 	return nil
 }
 
-func (s *Service) GetDisplayFields() []string {
-	var fields []string
+func (s *Service) GetDisplayFields() []FieldSettings {
+	var fields []FieldSettings
 	for _, val := range s.Fields {
 		if val.Display {
-			fields = append(fields, val.Name)
+			fields = append(fields, val)
 		} else if val.DisplayName != "" {
-			fields = append(fields, val.Name)
+			fields = append(fields, val)
 		}
 	}
-	if len(fields) > 0 {
+	if len(fields) == 0 {
 		for _, val := range s.Fields {
-			fields = append(fields, val.Name)
+			fields = append(fields, val)
 		}
 	}
 	return fields

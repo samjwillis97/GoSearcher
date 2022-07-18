@@ -73,8 +73,8 @@ func (s *Service) loadFromCSV(f *os.File) {
 					}
 				}
 				for _, val := range s.GetDisplayFields() {
-					if col == val {
-						displayCols[j] = val
+					if col == val.Name {
+						displayCols[j] = val.Name
 					}
 				}
 			} else {

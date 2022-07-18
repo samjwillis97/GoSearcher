@@ -8,10 +8,14 @@ services:
       - name: NEW CODE
         search: true
         displayName: Code
+        qr:
+          templateString: "https://localhost:8000/test/{{.}}"
       - name: Business Name
         search: true
         primary: true
         displayName: Business
+        qr:
+          templateString: "{{.}}"
       - name: Office Address / Location
         displayName: Address
       - name: Email

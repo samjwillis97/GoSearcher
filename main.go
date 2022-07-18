@@ -178,11 +178,7 @@ func setupWindow(w fyne.Window, S Service) {
 }
 
 func searchInterface(s Service) {
-	// Implementation loads data into memory
-	log.Println(s)
-
 	s.loadData()
-
 	w = a.NewWindow(s.Name)
 	setupWindow(w, s)
 	w.Show()
