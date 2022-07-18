@@ -167,7 +167,7 @@ func generateQR(value string, templateString string) *bytes.Reader {
 
 	value = b.String()
 
-	qr, err := qrcode.Encode(value, qrcode.High, 256)
+	qr, err := qrcode.Encode(value, qrcode.High, 1024)
 	if err != nil {
 		fmt.Printf("QR error encoding to bytes: %v\n", err)
 	}
