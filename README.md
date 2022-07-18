@@ -2,7 +2,8 @@
 
 ## TODO
 
-- Investigate bug of having multiple servies in config
+- Fix crashing on service activation once built
+- Add better logging
 
 ### Hotkeys
 - Escape to Close

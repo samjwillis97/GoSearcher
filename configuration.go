@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2"
 	"github.com/spf13/viper"
 	"log"
+	"os"
 )
 
 type Configuration struct {
@@ -42,9 +43,9 @@ var C Configuration
 var Services []Service
 
 func setupConfig() {
-	// TODO: Change Config location depending on system
+	configDir, _ := os.UserConfigDir()
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(configDir + string(os.PathSeparator) + "GoSearcher")
 }
 
 func readConfig() {
