@@ -33,15 +33,15 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 	form := widget.NewForm()
 	shortCuts := map[fyne.Shortcut]func(shortcut fyne.Shortcut){}
 
-	copyIcon, err := fyne.LoadResourceFromPath("./icons/content_copy.svg")
-	if err != nil {
-		panic(err)
-	}
-
-	qrIcon, err := fyne.LoadResourceFromPath("./icons/qr_icon.svg")
-	if err != nil {
-		panic(err)
-	}
+	//copyIcon, err := fyne.LoadResourceFromPath("./icons/content_copy.svg")
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//qrIcon, err := fyne.LoadResourceFromPath("./icons/qr_icon.svg")
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	i := 0
 	for _, val := range S.GetDisplayFields() {
@@ -64,8 +64,8 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 			newWindow.Close()
 		}
 
-		buttonLabel := ""
-
+		buttonLabel := "Copy"
+		//buttonLabel := ""
 		if i < 10 {
 			keyString := strconv.Itoa(i)
 			copyKey := &desktop.CustomShortcut{KeyName: fyne.KeyName(keyString), Modifier: fyne.KeyModifierSuper}
@@ -75,7 +75,8 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 			buttonLabel = " - " + keyString
 		}
 
-		widgetCopy := widget.NewButtonWithIcon(buttonLabel, copyIcon, copyCallback)
+		widgetCopy := widget.NewButton(buttonLabel, copyCallback)
+		//widgetCopy := widget.NewButtonWithIcon(buttonLabel, copyIcon, copyCallback)
 
 		var qrLayout fyne.CanvasObject
 
@@ -91,7 +92,8 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 				}
 			}
 
-			widgetQr := widget.NewButtonWithIcon("", qrIcon, qrCallback)
+			widgetQr := widget.NewButton("QR", qrCallback)
+			//widgetQr := widget.NewButtonWithIcon("", qrIcon, qrCallback)
 			qrLayout = container.New(
 				layout.NewBorderLayout(nil, nil, nil, widgetQr),
 				widgetQr,

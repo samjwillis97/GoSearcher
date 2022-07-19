@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -12,6 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"log"
+	"os"
 )
 
 // TODO: Fix this - surely a better way then a global
@@ -22,6 +24,23 @@ var a fyne.App
 var w fyne.Window
 
 func main() {
+	// open a file
+	f, err := os.OpenFile(os.TempDir()+string(os.PathSeparator)+"GoSearcher.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		fmt.Printf("error opening file: %v", err)
+	}
+
+	// don't forget to close it
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+
+		}
+	}(f)
+
+	// Output to stderr instead of stdout, could also be a file.
+	log.SetOutput(f)
+	log.Println("GoSearcher Initd")
 
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		readConfig()
