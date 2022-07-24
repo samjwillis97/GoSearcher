@@ -1,43 +1,11 @@
 configuration:
   maxEntries: 10
 services:
-  - name: Search Code/Name
-    sourceFile: ./test.csv
-    fileType: csv
+  - name: Search Business
+    type: search
     fileSettings:
-      sheet: Client Info
-      numberOfSkipRows: 0
-    fields:
-      - name: NEW CODE
-        search: true
-        displayName: Code
-        qr:
-          templateString: "https://localhost:8000/test/{{.}}"
-      - name: Business Name
-        search: true
-        primary: true
-        displayName: Business
-        qr:
-          templateString: "{{.}}"
-      - name: Office Address / Location
-        displayName: Address
-      - name: Email
-        search: true
-        display: true
-      - name: Phone Number
-        search: true
-        displayName: Phone
-      - name: Mobile Number
-        search: true
-        displayName: Mobile
-      - name: Name
-        displayName: First Name
-      - name: Last Name
-        display: true
-  - name: Search Code/Name XLSX
-    sourceFile: ./CLIENT_INFO.xlsx
-    fileType: xlsx
-    fileSettings:
+      source: ./CLIENT_INFO.xlsx
+      type: xlsx
       sheet: Client Info
       numberOfSkipRows: 6
     fields:

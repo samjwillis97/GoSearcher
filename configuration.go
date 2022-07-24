@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"os"
+	"strings"
 )
 
 type Configuration struct {
@@ -15,8 +16,7 @@ type Configuration struct {
 
 type Service struct {
 	Name         string
-	SourceFile   string
-	FileType     string
+	Type         string
 	Fields       []FieldSettings
 	FileSettings FileSettings
 }
@@ -31,6 +31,8 @@ type FieldSettings struct {
 }
 
 type FileSettings struct {
+	Source           string
+	Type             string
 	Sheet            string
 	NumberOfSkipRows int
 }
@@ -97,6 +99,20 @@ func readConfig() {
 	}
 
 	return
+}
+
+func (s *Service) GetServiceType() string {
+	return strings.ToLower(s.Type)
+}
+
+func (s *Service) GetSourceFilePath() string {
+	// TODO: Throw error
+	return s.FileSettings.Source
+}
+
+func (s *Service) GetSourceFileType() string {
+	// TODO: default to SourceFile
+	return s.FileSettings.Type
 }
 
 func (s *Service) GetPrimaryFields() []string {

@@ -1,15 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/widget"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"log"
@@ -24,6 +19,8 @@ var a fyne.App
 var w fyne.Window
 
 func main() {
+	// TODO: Log Better
+
 	// open a file
 	f, err := os.OpenFile(os.TempDir()+string(os.PathSeparator)+"GoSearcher.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
@@ -53,153 +50,33 @@ func main() {
 
 	a = app.New()
 	if desk, ok := a.(desktop.App); ok {
-		desk.SetSystemTrayMenu(setupMenu())
+		desk.SetSystemTrayMenu(setupTrayMenu())
 	}
 
 	a.Run()
 }
 
-func setupMenu() *fyne.Menu {
+func setupTrayMenu() *fyne.Menu {
 	var menus []*fyne.MenuItem
 
 	for _, service := range Services {
 		serviceToAssign := service
+
 		menus = append(menus, fyne.NewMenuItem(serviceToAssign.Name, func() {
-			searchInterface(serviceToAssign)
+			switch service.GetServiceType() {
+			case "search":
+				createSearchInterface(serviceToAssign)
+			}
 		}))
 	}
 
-	return fyne.NewMenu("Menu :)", menus...)
+	return fyne.NewMenu("System Tray", menus...)
 }
 
-func setupWindow(w fyne.Window, S Service) {
-	input := widget.NewEntry()
-	input.SetPlaceHolder("Enter Text...")
-
-	initData := make([]interface{}, 0)
-	data := binding.BindUntypedList(&initData)
-
-	list := widget.NewListWithData(
-		data,
-		func() fyne.CanvasObject {
-			listItem := widget.NewButton("", func() {
-			})
-			listItem.Alignment = widget.ButtonAlignLeading
-			return listItem
-		},
-		func(i binding.DataItem, o fyne.CanvasObject) {
-			item, _ := i.(binding.Untyped).Get()
-			switch item := item.(type) {
-			case string:
-				var value map[string]string
-				byteValue := []byte(item)
-				err := json.Unmarshal(byteValue, &value)
-				if err != nil {
-					log.Printf("error unmarshalling json: %v\n", err)
-				}
-
-				var primaryField = S.GetPrimaryFields()
-				if len(primaryField) > 0 {
-					var text string
-					if len(primaryField) > 1 {
-						for _, val := range primaryField {
-							text = text + value[val] + " "
-						}
-					} else {
-						text = value[primaryField[0]]
-					}
-					o.(*widget.Button).SetText(text)
-				}
-
-				callBackFn := func() {
-					// TODO: New Window here !
-					window := createInfoWindow(value, S)
-					if window != nil {
-						window.Show()
-					}
-					if C.ClearOnHide {
-						input.SetText("")
-						_ = data.Set([]interface{}{})
-					}
-					input.SetPlaceHolder("Enter Text...")
-					w.Hide()
-					w.Resize(fyne.Size{
-						Width:  500,
-						Height: 0,
-					})
-				}
-				o.(*widget.Button).OnTapped = callBackFn
-			}
-		},
-	)
-
-	content := container.New(layout.NewBorderLayout(
-		input,
-		nil,
-		nil,
-		nil,
-	),
-		input,
-		list,
-	)
-
-	w.SetContent(content)
-	w.Resize(fyne.Size{
-		Width:  500,
-		Height: 0,
-	})
-	w.CenterOnScreen()
-
-	w.SetCloseIntercept(func() {
-		w.Close()
-
-		// Clear out memory
-		dataSet = []map[string]string{}
-		searchData = []string{}
-	})
-
-	w.Canvas().Focus(input) // FIXME
-	w.Canvas().Unfocus()
-
-	input.OnChanged = func(s string) {
-		results := searchCurrentData(s)
-
-		var newData []interface{}
-		for _, val := range results {
-			jsonBytes, err := json.Marshal(val)
-			if err != nil {
-				log.Printf("error json.Marshal: %v\n", err)
-			}
-			jsonString := string(jsonBytes)
-			// value appended to newData must be comparable
-			// could use indices instead lol
-			newData = append(newData, jsonString)
-		}
-
-		if len(newData) > 0 {
-			_ = data.Set(newData)
-
-			maxShown := float32(C.MaxEntries - 1)
-			baseListHeight := list.MinSize().Height
-			newListHeight := maxShown * baseListHeight
-
-			if len(newData) < int(maxShown) {
-				newListHeight = float32(len(newData)-1) * baseListHeight
-			}
-
-			// Shows Input with 4 List items
-			w.Resize(fyne.Size{
-				Width:  500,
-				Height: content.MinSize().Height + newListHeight,
-			})
-		}
-	}
-}
-
-func searchInterface(s Service) {
-	s.loadData()
+func createSearchInterface(s Service) {
+	s.loadSearchData()
 	w = a.NewWindow(s.Name)
-	setupWindow(w, s)
+	initSearchWindow(w, s)
 	w.Show()
 	w.CenterOnScreen()
 	w.RequestFocus()
