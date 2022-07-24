@@ -19,24 +19,29 @@ func (s SearchDataSet) Len() int {
 	return len(s)
 }
 
+// TODO: Work out how to not use globals :)
 var dataSet []map[string]string
 var searchData = SearchDataSet{}
 
-func (s *Service) loadData() {
-	switch strings.ToLower(s.FileType) {
+func (s *Service) loadSearchData() {
+
+	var data [][]string
+
+	switch strings.ToLower(s.GetSourceFileType()) {
 	case "csv":
-		s.loadFromCSV(s.SourceFile)
+		data = s.loadRowsFromCSV()
 	case "xlsx":
-		s.loadFromXLSX(s.SourceFile)
+		data = s.loadRowsFromXLSX()
 	}
 
+	clearGlobalData()
+	searchData, dataSet = s.parseTabulatedData(data)
 }
 
-// FIXME: Consider refactoring these shitloads of repeated code
-func (s *Service) loadFromCSV(path string) {
-	f, err := os.Open(path)
+func (s *Service) loadRowsFromCSV() [][]string {
+	f, err := os.Open(s.GetSourceFilePath())
 	if err != nil {
-		log.Printf("error in loadData: %v\n", err)
+		log.Printf("error in loadSearchData: %v\n", err)
 		if a != nil {
 			a.SendNotification(
 				fyne.NewNotification(
@@ -55,54 +60,18 @@ func (s *Service) loadFromCSV(path string) {
 	}(f)
 
 	csvReader := csv.NewReader(f)
-	data, err := csvReader.ReadAll()
+	rows, err := csvReader.ReadAll()
 	if err != nil {
 		log.Fatalf("error in readCSV reader: %v\n", err)
 	}
 
-	clearData()
-
-	searchCols := make(map[int]string)
-	displayCols := make(map[int]string)
-
-	for i, row := range data {
-		searchValue := ""
-		var dataSetEntry = map[string]string{}
-		if i >= s.FileSettings.NumberOfSkipRows {
-			for j, col := range row {
-				if i == s.FileSettings.NumberOfSkipRows { // Header Row
-					for _, val := range s.GetSearchFields() {
-						if col == val {
-							searchCols[j] = val
-						}
-					}
-					for _, val := range s.GetDisplayFields() {
-						if col == val.Name {
-							displayCols[j] = val.Name
-						}
-					}
-				} else {
-					if _, ok := searchCols[j]; ok {
-						searchValue += col + " "
-					}
-					if val, ok := displayCols[j]; ok {
-						dataSetEntry[val] = col
-					}
-				}
-			}
-		}
-		if searchValue != "" {
-			// THESE MUST STAY TOGETHER
-			searchData = append(searchData, searchValue)
-			dataSet = append(dataSet, dataSetEntry)
-		}
-	}
+	return rows
 }
 
-func (s *Service) loadFromXLSX(path string) {
-	f, err := excelize.OpenFile(path)
+func (s *Service) loadRowsFromXLSX() [][]string {
+	f, err := excelize.OpenFile(s.GetSourceFilePath())
 	if err != nil {
-		log.Printf("error in loadData: %v\n", err)
+		log.Printf("error in loadSearchData: %v\n", err)
 		if a != nil {
 			a.SendNotification(
 				fyne.NewNotification(
@@ -119,11 +88,9 @@ func (s *Service) loadFromXLSX(path string) {
 		}
 	}()
 
-	clearData()
-
 	rows, err := f.GetRows(s.FileSettings.Sheet)
 	if err != nil {
-		log.Printf("error in loadData: %v\n", err)
+		log.Printf("error in loadSearchData: %v\n", err)
 		if a != nil {
 			a.SendNotification(
 				fyne.NewNotification(
@@ -134,10 +101,17 @@ func (s *Service) loadFromXLSX(path string) {
 		}
 	}
 
+	return rows
+}
+
+func (s *Service) parseTabulatedData(table [][]string) ([]string, []map[string]string) {
 	searchCols := make(map[int]string)
 	displayCols := make(map[int]string)
 
-	for i, row := range rows {
+	var searchStrings []string
+	var data []map[string]string
+
+	for i, row := range table {
 		searchValue := ""
 		var dataSetEntry = map[string]string{}
 		if i >= s.FileSettings.NumberOfSkipRows {
@@ -165,13 +139,14 @@ func (s *Service) loadFromXLSX(path string) {
 		}
 		if searchValue != "" {
 			// THESE MUST STAY TOGETHER
-			searchData = append(searchData, searchValue)
-			dataSet = append(dataSet, dataSetEntry)
+			searchStrings = append(searchStrings, searchValue)
+			data = append(data, dataSetEntry)
 		}
 	}
+	return searchStrings, data
 }
 
-func clearData() {
+func clearGlobalData() {
 	dataSet = []map[string]string{}
 	searchData = SearchDataSet{}
 }

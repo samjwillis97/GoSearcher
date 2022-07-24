@@ -1,17 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	widget "fyne.io/fyne/v2/widget"
-	"github.com/skip2/go-qrcode"
 	"strconv"
-	"text/template"
 )
 
 func createInfoWindow(data map[string]string, S Service) fyne.Window {
@@ -82,17 +78,23 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 
 		if val.Qr.TemplateString != "" && data[val.Name] != "" {
 
-			qrValue := data[val.Name]
-			qrField := val
-			qrCallback := func() {
-				window := newQrWindow(qrValue, qrField)
-				if window != nil {
-					window.Show()
-					newWindow.Close()
-				}
-			}
+			//qrValue := data[val.Name]
+			//qrField := val
+			//qrCallback := func() {
+			//	window := createQRWindow(qrValue, qrField)
+			//	if window != nil {
+			//		window.Show()
+			//		newWindow.Close()
+			//	}
+			//}
 
-			widgetQr := widget.NewButton("QR", qrCallback)
+			widgetQr := widget.NewButton(
+				"QR",
+				val.createQRCodeCallback(
+					newWindow,
+					data[val.Name],
+				),
+			)
 			//widgetQr := widget.NewButtonWithIcon("", qrIcon, qrCallback)
 			qrLayout = container.New(
 				layout.NewBorderLayout(nil, nil, nil, widgetQr),
@@ -137,42 +139,17 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 	return newWindow
 }
 
-func newQrWindow(value string, settings FieldSettings) fyne.Window {
-	windowName := fmt.Sprintf("Generated %s QR Code", settings.GetDisplayName())
-	newWindow := a.NewWindow(windowName)
-	desiredWidth := float32(400)
+//func createCopyCallback() func() {
+//
+//}
 
-	qrReader := generateQR(value, settings.Qr.TemplateString)
-
-	image := canvas.NewImageFromReader(qrReader, "qr.png")
-
-	newWindow.SetContent(image)
-	newWindow.Resize(fyne.Size{
-		Width:  desiredWidth,
-		Height: desiredWidth,
-	})
-	newWindow.CenterOnScreen()
-
-	return newWindow
-}
-
-func generateQR(value string, templateString string) *bytes.Reader {
-	var b bytes.Buffer
-	tmpl, err := template.New("").Parse(templateString)
-	if err != nil {
-		fmt.Printf("QR error parsing template: %v\n", err)
+// TODO: Fix this, was a blank QR Code lol
+func (f *FieldSettings) createQRCodeCallback(window fyne.Window, value string) func() {
+	return func() {
+		newWindow := createQRWindow(value, f.Qr.TemplateString)
+		if newWindow != nil {
+			newWindow.Show()
+			window.Close()
+		}
 	}
-	err = tmpl.Execute(&b, value)
-	if err != nil {
-		fmt.Printf("QR error executing template: %v\n", err)
-	}
-
-	value = b.String()
-
-	qr, err := qrcode.Encode(value, qrcode.High, 1024)
-	if err != nil {
-		fmt.Printf("QR error encoding to bytes: %v\n", err)
-	}
-
-	return bytes.NewReader(qr)
 }
