@@ -20,6 +20,7 @@ func searchCurrentData(search string) []map[string]string {
 	return searchResults
 }
 
+// TODO: Clean this up - break up into smaller functions?
 func initSearchWindow(w fyne.Window, S Service) {
 	input := widget.NewEntry()
 	input.SetPlaceHolder("Enter Text...")

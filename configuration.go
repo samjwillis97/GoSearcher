@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -15,19 +16,26 @@ type Configuration struct {
 }
 
 type Service struct {
-	Name         string
-	Type         string
-	Fields       []FieldSettings
-	FileSettings FileSettings
+	Name           string
+	Type           string
+	SearchSettings SearchSettings
+	Fields         []SearchFieldSettings
+	FileSettings   FileSettings
+	QR             QRGeneratorSettings
 }
 
-type FieldSettings struct {
+type SearchSettings struct {
+	Modifier string
+}
+
+type SearchFieldSettings struct {
 	Name        string
 	DisplayName string
 	Search      bool
 	Primary     bool
 	Display     bool
-	Qr          QRSettings
+	KeyBinding  string
+	Qr          SearchQRSettings
 }
 
 type FileSettings struct {
@@ -37,8 +45,11 @@ type FileSettings struct {
 	NumberOfSkipRows int
 }
 
-type QRSettings struct {
+type SearchQRSettings struct {
 	TemplateString string
+}
+
+type QRGeneratorSettings struct {
 }
 
 var C Configuration
@@ -93,11 +104,6 @@ func readConfig() {
 		log.Fatalf("unable to decode into struct, %v", err)
 	}
 
-	if w != nil {
-		w.Close()
-		w = a.NewWindow("Client Search")
-	}
-
 	return
 }
 
@@ -134,8 +140,8 @@ func (s *Service) GetPrimaryFields() []string {
 	return nil
 }
 
-func (s *Service) GetDisplayFields() []FieldSettings {
-	var fields []FieldSettings
+func (s *Service) GetDisplayFields() []SearchFieldSettings {
+	var fields []SearchFieldSettings
 	for _, val := range s.Fields {
 		if val.Display {
 			fields = append(fields, val)
@@ -164,9 +170,42 @@ func (s *Service) GetSearchFields() []string {
 	return fields
 }
 
-func (f *FieldSettings) GetDisplayName() string {
+func (s *Service) GetSearchModifierKey() fyne.KeyModifier {
+	switch strings.ToLower(s.SearchSettings.Modifier) {
+	case "ctrl":
+	case "control":
+		return fyne.KeyModifierControl
+	case "shift":
+		return fyne.KeyModifierShift
+	case "alt":
+	case "option":
+		return fyne.KeyModifierAlt
+	case "windows":
+	case "super":
+	case "meta":
+	case "cmd":
+	case "command":
+		return fyne.KeyModifierSuper
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		return fyne.KeyModifierControl
+	case "darwin":
+	case "linux":
+		return fyne.KeyModifierAlt
+	}
+
+	return fyne.KeyModifierControl
+}
+
+func (f *SearchFieldSettings) GetDisplayName() string {
 	if f.DisplayName == "" {
 		return f.Name
 	}
 	return f.DisplayName
+}
+
+func (f *SearchFieldSettings) GetKeyBinding() string {
+	return strings.ToUpper(f.KeyBinding)
 }

@@ -1,8 +1,18 @@
 configuration:
   maxEntries: 10
 services:
-  - name: Search Business
+  - name: QR Code Generator
+    type: qr-code-generator
+    inputs:
+      - test
+      - test2
+    templateString:
+      - "{{test}} and {{.test2}}"
+  - name: Search Business New Again
     type: search
+    keyBinding: 1
+    searchSettings:
+      modifier: control
     fileSettings:
       source: ./CLIENT_INFO.xlsx
       type: xlsx
@@ -12,12 +22,14 @@ services:
       - name: NEW CODE
         search: true
         displayName: Code
+        keyBinding: c
         qr:
           templateString: "https://localhost:8000/test/{{.}}"
       - name: Business Name
         search: true
         primary: true
         displayName: Business
+        keyBinding: b
         qr:
           templateString: "{{.}}"
       - name: Office Address / Location

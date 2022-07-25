@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	widget "fyne.io/fyne/v2/widget"
 	"strconv"
+	"strings"
 )
 
 func createInfoWindow(data map[string]string, S Service) fyne.Window {
@@ -39,55 +40,65 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 	//	panic(err)
 	//}
 
+	// Create Shortcuts for Copying
+	var copyButtonLabels []string
+	assignedBindings := make(map[string]struct{})
+	modifier := S.GetSearchModifierKey()
 	i := 0
+	for _, val := range S.GetDisplayFields() {
+		i++
+		if i < 10 {
+			boundKey := val.GetKeyBinding()
+			if boundKey == "" {
+				boundKey = strconv.Itoa(i)
+			}
+			if _, ok := assignedBindings[boundKey]; ok {
+				boundKey = strconv.Itoa(i)
+			}
+			assignedBindings[boundKey] = struct{}{}
+
+			keyBinding := &desktop.CustomShortcut{
+				KeyName:  fyne.KeyName(boundKey),
+				Modifier: modifier,
+			}
+
+			callback := createCopyCallback(
+				newWindow,
+				val.GetDisplayName(),
+				data[val.Name],
+			)
+			shortCuts[keyBinding] = func(shortcut fyne.Shortcut) {
+				callback()
+			}
+			copyButtonLabels = append(copyButtonLabels, " - "+strings.ToLower(boundKey))
+		}
+	}
+
+	i = 0
 	for _, val := range S.GetDisplayFields() {
 		i++
 
 		newWidget := widget.NewEntry()
 		newWidget.Text = data[val.Name]
 
-		name := val.GetDisplayName()
-		copyValue := data[val.Name]
-		copyCallback := func() {
-			newWindow.Clipboard().SetContent(copyValue)
-			// TODO: Fix Notification
-			a.SendNotification(
-				fyne.NewNotification(
-					"Content Copied",
-					fmt.Sprintf("%s copied to clipboard.", name),
-				),
-			)
-			newWindow.Close()
-		}
-
-		buttonLabel := "Copy"
-		//buttonLabel := ""
+		buttonLabel := ""
 		if i < 10 {
-			keyString := strconv.Itoa(i)
-			copyKey := &desktop.CustomShortcut{KeyName: fyne.KeyName(keyString), Modifier: fyne.KeyModifierSuper}
-			shortCuts[copyKey] = func(shortcut fyne.Shortcut) {
-				copyCallback()
-			}
-			buttonLabel = " - " + keyString
+			buttonLabel = copyButtonLabels[i-1]
 		}
 
-		widgetCopy := widget.NewButton(buttonLabel, copyCallback)
+		widgetCopy := widget.NewButton(
+			buttonLabel,
+			createCopyCallback(
+				newWindow,
+				val.GetDisplayName(),
+				data[val.Name],
+			),
+		)
 		//widgetCopy := widget.NewButtonWithIcon(buttonLabel, copyIcon, copyCallback)
 
 		var qrLayout fyne.CanvasObject
 
 		if val.Qr.TemplateString != "" && data[val.Name] != "" {
-
-			//qrValue := data[val.Name]
-			//qrField := val
-			//qrCallback := func() {
-			//	window := createQRWindow(qrValue, qrField)
-			//	if window != nil {
-			//		window.Show()
-			//		newWindow.Close()
-			//	}
-			//}
-
 			widgetQr := widget.NewButton(
 				"QR",
 				val.createQRCodeCallback(
@@ -139,14 +150,25 @@ func createInfoWindow(data map[string]string, S Service) fyne.Window {
 	return newWindow
 }
 
-//func createCopyCallback() func() {
-//
-//}
-
-// TODO: Fix this, was a blank QR Code lol
-func (f *FieldSettings) createQRCodeCallback(window fyne.Window, value string) func() {
+func createCopyCallback(window fyne.Window, name string, value string) func() {
 	return func() {
-		newWindow := createQRWindow(value, f.Qr.TemplateString)
+		window.Clipboard().SetContent(value)
+		if a != nil {
+			a.SendNotification(
+				fyne.NewNotification(
+					"Content Copied",
+					fmt.Sprintf("%s copied to clipboard.", name),
+				),
+			)
+		}
+		window.Close()
+	}
+}
+
+func (f *SearchFieldSettings) createQRCodeCallback(window fyne.Window, value string) func() {
+	template := f.Qr.TemplateString // Do this to ensure correct assignment
+	return func() {
+		newWindow := createQRWindow(value, template)
 		if newWindow != nil {
 			newWindow.Show()
 			window.Close()

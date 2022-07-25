@@ -3,7 +3,6 @@
 ## TODO
 
 - Fix icons not being bundled causing the program to crash
-- Fix notifications - especially on copy hotkey
 
 ### Hotkeys
 - Escape to Close
