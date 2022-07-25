@@ -36,23 +36,29 @@ func main() {
 	}(f)
 
 	// Output to stderr instead of stdout, could also be a file.
-	log.SetOutput(f)
+	//log.SetOutput(f)
 	log.Println("GoSearcher Initd")
 
 	viper.OnConfigChange(func(e fsnotify.Event) {
+		log.Println("Config Modified - Reloading")
 		readConfig()
+		if a != nil {
+			if desk, ok := a.(desktop.App); ok {
+				//desk.SetSystemTrayIcon()
+				desk.SetSystemTrayMenu(setupTrayMenu())
+			}
+		}
 	})
 
 	setupConfig()
 	readConfig()
 
 	viper.WatchConfig()
-
 	a = app.New()
 	if desk, ok := a.(desktop.App); ok {
+		//desk.SetSystemTrayIcon()
 		desk.SetSystemTrayMenu(setupTrayMenu())
 	}
-
 	a.Run()
 }
 
@@ -63,9 +69,11 @@ func setupTrayMenu() *fyne.Menu {
 		serviceToAssign := service
 
 		menus = append(menus, fyne.NewMenuItem(serviceToAssign.Name, func() {
-			switch service.GetServiceType() {
+			switch serviceToAssign.GetServiceType() {
 			case "search":
 				createSearchInterface(serviceToAssign)
+			default:
+				log.Printf("Unknown Service Type: %s", serviceToAssign.GetServiceType())
 			}
 		}))
 	}
