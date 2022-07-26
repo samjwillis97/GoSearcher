@@ -1,5 +1,10 @@
 # GoSearcher
 
+## Roadblocks
+
+- Single Instance (https://stackoverflow.com/questions/23162986/restricting-to-single-instance-of-executable-with-golang)
+- Global Hotkeys (https://github.com/fyne-io/fyne/issues/2304)
+
 ## TODO
 
 - Fix icons not being bundled causing the program to crash
