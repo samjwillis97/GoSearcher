@@ -3,11 +3,10 @@ configuration:
 services:
   - name: QR Code Generator
     type: qr-code-generator
-    inputs:
-      - test
-      - test2
-    templateString:
-      - "{{test}} and {{.test2}}"
+    qrSettings:
+      inputs:
+        - id
+      templateString: "https://localhost/{{.id}}"
   - name: Search Business New Again
     type: search
     keyBinding: 1
@@ -24,14 +23,14 @@ services:
         displayName: Code
         keyBinding: c
         qr:
-          templateString: "https://localhost:8000/test/{{.}}"
+          templateString: "https://localhost:8000/test/{{.value}}"
       - name: Business Name
         search: true
         primary: true
         displayName: Business
         keyBinding: b
         qr:
-          templateString: "{{.}}"
+          templateString: "{{.value}}"
       - name: Office Address / Location
         displayName: Address
       - name: Email

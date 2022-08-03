@@ -21,7 +21,7 @@ type Service struct {
 	SearchSettings SearchSettings
 	Fields         []SearchFieldSettings
 	FileSettings   FileSettings
-	QR             QRGeneratorSettings
+	QRSettings     QRGeneratorSettings
 }
 
 type SearchSettings struct {
@@ -50,6 +50,8 @@ type SearchQRSettings struct {
 }
 
 type QRGeneratorSettings struct {
+	Inputs         []string
+	TemplateString string
 }
 
 var C Configuration

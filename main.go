@@ -72,6 +72,8 @@ func setupTrayMenu() *fyne.Menu {
 			switch serviceToAssign.GetServiceType() {
 			case "search":
 				createSearchInterface(serviceToAssign)
+			case "qr-code-generator":
+				createQRGeneratorInterface(serviceToAssign)
 			default:
 				log.Printf("Unknown Service Type: %s", serviceToAssign.GetServiceType())
 			}
@@ -85,6 +87,13 @@ func createSearchInterface(s Service) {
 	s.loadSearchData()
 	w = a.NewWindow(s.Name)
 	initSearchWindow(w, s)
+	w.Show()
+	w.CenterOnScreen()
+	w.RequestFocus()
+}
+
+func createQRGeneratorInterface(s Service) {
+	w = s.QRSettings.createPromptWindow()
 	w.Show()
 	w.CenterOnScreen()
 	w.RequestFocus()
