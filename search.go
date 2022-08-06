@@ -108,7 +108,6 @@ func initSearchWindow(w fyne.Window, S Service) {
 	})
 
 	w.Canvas().Focus(input) // FIXME
-	w.Canvas().Unfocus()
 
 	input.OnChanged = func(s string) {
 		results := searchCurrentData(s)

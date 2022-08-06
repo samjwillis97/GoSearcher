@@ -9,7 +9,15 @@
 
 - Fix icons not being bundled causing the program to crash
 
+### Requested
+
+- Search field focus on open
+- Enter to open item
+- Configurable Hotkeys
+- Escape to Close
+
 ### Hotkeys
+
 - Escape to Close
 - Arrows for navigation
 
