@@ -11,9 +11,7 @@
 
 ### Requested
 
-- Search field focus on open
 - Enter to open item
-- Configurable Hotkeys
 - Escape to Close
 
 ### Hotkeys
