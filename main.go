@@ -30,7 +30,7 @@ type Arg struct{}
 type Reply struct{}
 
 func (l *Listener) OpenService(arg Arg, reply *Reply) error {
-	startService(Services[0])
+	startServiceSearchInterface()
 	return nil
 }
 
@@ -121,18 +121,6 @@ func setupTrayMenu() *fyne.Menu {
 	return fyne.NewMenu("System Tray", menus...)
 }
 
-func startService(s Service) {
-	switch s.GetServiceType() {
-	case "search":
-		createSearchInterface(s)
-	case "qr-code-generator":
-		createQRGeneratorInterface(s)
-	default:
-		log.Printf("Unknown Service Type: %s", s.GetServiceType())
-	}
-
-}
-
 func instanceExists() bool {
 	_, err := createLockFile(path.Join(os.TempDir(), "GoSearcher.lock"))
 	if err != nil {
@@ -170,32 +158,21 @@ func createLockFile(filename string) (*os.File, error) {
 func startRPCServer(port int) {
 	log.Println("Starting RPC Server")
 	listener := new(Listener)
-	rpc.Register(listener)
+	err := rpc.Register(listener)
+	if err != nil {
+		log.Fatalf("error registering: %v", err)
+	}
+
 	rpc.HandleHTTP()
 	l, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
 		log.Fatal("listen error:", err)
 	}
+
 	go func() {
 		err := http.Serve(l, nil)
 		if err != nil {
 			log.Fatal("serve error:", err)
 		}
 	}()
-}
-
-func createSearchInterface(s Service) {
-	s.loadSearchData()
-	w = a.NewWindow(s.Name)
-	initSearchWindow(w, s)
-	w.Show()
-	w.CenterOnScreen()
-	w.RequestFocus()
-}
-
-func createQRGeneratorInterface(s Service) {
-	w = s.QRSettings.createPromptWindow()
-	w.Show()
-	w.CenterOnScreen()
-	w.RequestFocus()
 }

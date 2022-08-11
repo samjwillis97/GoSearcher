@@ -12,10 +12,21 @@ import (
 )
 
 func searchCurrentData(search string) []map[string]string {
+	// TODO: Change this to the one Jeremy recommended
 	results := fuzzy.FindFrom(search, searchData)
 	searchResults := make([]map[string]string, 0)
 	for _, r := range results {
 		searchResults = append(searchResults, dataSet[r.Index])
+	}
+	return searchResults
+}
+
+func fuzzySearch(search string, data []string) []string {
+	// TODO: Change this to the one Jeremy recommended
+	results := fuzzy.Find(search, data)
+	var searchResults []string
+	for _, r := range results {
+		searchResults = append(searchResults, r.Str)
 	}
 	return searchResults
 }
@@ -107,7 +118,7 @@ func initSearchWindow(w fyne.Window, S Service) {
 		searchData = []string{}
 	})
 
-	w.Canvas().Focus(input) // FIXME
+	w.Canvas().Focus(input)
 
 	input.OnChanged = func(s string) {
 		results := searchCurrentData(s)
