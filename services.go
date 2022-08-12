@@ -58,7 +58,6 @@ func initServiceSearchWindow(w fyne.Window) {
 			listItem := widget.NewButton("", func() {
 			})
 			listItem.Alignment = widget.ButtonAlignLeading
-			log.Println("CreateItem")
 			return listItem
 		},
 		func(i binding.DataItem, o fyne.CanvasObject) {
@@ -135,17 +134,18 @@ func initServiceSearchWindow(w fyne.Window) {
 	}
 
 	input.OnChanged = func(text string) {
-		services := allServices
-		results := fuzzySearch(text, services)
+		results := allServices
+		if text != "" {
+			results = fuzzySearch(text, results)
+		}
 
 		var newData []interface{}
 		for _, val := range results {
 			newData = append(newData, val)
 		}
 
+		_ = data.Set(newData)
 		if len(newData) > 0 {
-			_ = data.Set(newData)
-
 			maxShown := float32(C.MaxEntries - 1)
 			baseListHeight := list.MinSize().Height
 			newListHeight := maxShown * baseListHeight
@@ -157,6 +157,11 @@ func initServiceSearchWindow(w fyne.Window) {
 			w.Resize(fyne.Size{
 				Width:  500,
 				Height: content.MinSize().Height + newListHeight,
+			})
+		} else {
+			w.Resize(fyne.Size{
+				Width:  500,
+				Height: input.MinSize().Height,
 			})
 		}
 	}

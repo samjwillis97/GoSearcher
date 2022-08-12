@@ -7,12 +7,13 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/hbollon/go-edlib"
 	"github.com/sahilm/fuzzy"
 	"log"
 )
 
 func searchCurrentData(search string) []map[string]string {
-	// TODO: Change this to the one Jeremy recommended
+	// TODO: Change to use edlib
 	results := fuzzy.FindFrom(search, searchData)
 	searchResults := make([]map[string]string, 0)
 	for _, r := range results {
@@ -22,13 +23,28 @@ func searchCurrentData(search string) []map[string]string {
 }
 
 func fuzzySearch(search string, data []string) []string {
-	// TODO: Change this to the one Jeremy recommended
-	results := fuzzy.Find(search, data)
-	var searchResults []string
-	for _, r := range results {
-		searchResults = append(searchResults, r.Str)
+	results, err := edlib.FuzzySearchSetThreshold(
+		search,
+		data,
+		C.MaxEntries,
+		0.7,
+		edlib.JaroWinkler,
+	)
+	if err != nil {
+		log.Printf("error fuzzy searching: %v\n", err)
 	}
-	return searchResults
+
+	i := 0
+	for range results {
+		// Delete element from array if it is empty string and keep order
+		if results[i] == "" {
+			results = append(results[:i], results[i+1:]...)
+		} else {
+			i++
+		}
+	}
+
+	return results
 }
 
 // TODO: Clean this up - break up into smaller functions?
