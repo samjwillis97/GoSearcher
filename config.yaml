@@ -43,12 +43,12 @@ services:
         search: true
         display: true
       - name: Phone Number
-        search: true
+#        search: true
         displayName: Phone
       - name: Mobile Number
-        search: true
+#        search: true
         displayName: Mobile
       - name: Name
         displayName: First Name
       - name: Last Name
-        display: true
+#        display: true

@@ -8,16 +8,26 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/hbollon/go-edlib"
-	"github.com/sahilm/fuzzy"
 	"log"
 )
 
-func searchCurrentData(search string) []map[string]string {
+func searchCurrentData(search string, similarity float32, algorithm edlib.Algorithm) []map[string]string {
 	// TODO: Change to use edlib
-	results := fuzzy.FindFrom(search, searchData)
+	//results := fuzzy.FindFrom(search, searchData)
+	//searchResults := make([]map[string]string, 0)
+	//for _, r := range results {
+	//	searchResults = append(searchResults, dataSet[r.Index])
+	//}
+	//return searchResults
+	results := fuzzySearch(search, searchData, similarity, algorithm)
 	searchResults := make([]map[string]string, 0)
-	for _, r := range results {
-		searchResults = append(searchResults, dataSet[r.Index])
+	for _, searchVal := range results {
+		for i, resultVal := range searchData {
+			if searchVal == resultVal {
+				searchResults = append(searchResults, dataSet[i])
+				break
+			}
+		}
 	}
 	return searchResults
 }
@@ -136,17 +146,12 @@ func initSearchWindow(w fyne.Window, S Service) {
 	w.Canvas().Focus(input)
 
 	input.OnChanged = func(s string) {
-		results := searchCurrentData(s)
-		//results2 := fuzzySearch(
-		//	s,
-		//	searchData,
-		//	S.SearchSettings.Similarity,
-		//	S.SearchSettings.GetSearchAlgorithm(),
-		//)
-		//for _, r := range results2 {
-		//	results = append(results, dataSet[r])
-		//}
-		//log.Println(results2)
+		//results := searchCurrentData(s)
+		results := searchCurrentData(
+			s,
+			S.SearchSettings.Similarity,
+			S.SearchSettings.GetSearchAlgorithm(),
+		)
 
 		var newData []interface{}
 		for _, val := range results {
@@ -159,8 +164,8 @@ func initSearchWindow(w fyne.Window, S Service) {
 			newData = append(newData, jsonString)
 		}
 
+		_ = data.Set(newData)
 		if len(newData) > 0 {
-			_ = data.Set(newData)
 
 			maxShown := float32(C.MaxEntries)
 			baseListHeight := list.MinSize().Height
@@ -173,6 +178,11 @@ func initSearchWindow(w fyne.Window, S Service) {
 			w.Resize(fyne.Size{
 				Width:  500,
 				Height: content.MinSize().Height + newListHeight,
+			})
+		} else {
+			w.Resize(fyne.Size{
+				Width:  500,
+				Height: content.MinSize().Height,
 			})
 		}
 	}
