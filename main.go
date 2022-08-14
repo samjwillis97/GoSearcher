@@ -15,7 +15,6 @@ import (
 	"os/signal"
 	"path"
 	"runtime"
-	"strconv"
 	"syscall"
 )
 
@@ -37,8 +36,14 @@ func (l *Listener) OpenService(arg Arg, reply *Reply) error {
 func main() {
 	// TODO: Log Better
 
-	if instanceExists() {
-		client, err := rpc.DialHTTP("tcp", "localhost:1024")
+	lockFilePath := path.Join(os.TempDir(), "GoSearcher.lock")
+	lockFile, err := createLockFile(lockFilePath)
+	if err != nil {
+		data, err := os.ReadFile(lockFilePath)
+		if err != nil {
+			log.Fatalf("error reading lock file: %v", err)
+		}
+		client, err := rpc.DialHTTP("tcp", string(data))
 		if err != nil {
 			log.Fatal("dialing:", err)
 		}
@@ -82,8 +87,7 @@ func main() {
 	setupConfig()
 	readConfig()
 
-	// 1024–65535
-	go startRPCServer(1024)
+	go startRPCServer(lockFile)
 
 	viper.WatchConfig()
 	a = app.New()
@@ -121,15 +125,6 @@ func setupTrayMenu() *fyne.Menu {
 	return fyne.NewMenu("System Tray", menus...)
 }
 
-func instanceExists() bool {
-	_, err := createLockFile(path.Join(os.TempDir(), "GoSearcher.lock"))
-	if err != nil {
-		log.Printf("Error creating lock file: %v", err)
-		return true
-	}
-	return false
-}
-
 func createLockFile(filename string) (*os.File, error) {
 	switch runtime.GOOS {
 	case "windows":
@@ -155,7 +150,7 @@ func createLockFile(filename string) (*os.File, error) {
 	return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 }
 
-func startRPCServer(port int) {
+func startRPCServer(lockFile *os.File) {
 	log.Println("Starting RPC Server")
 	listener := new(Listener)
 	err := rpc.Register(listener)
@@ -164,9 +159,14 @@ func startRPCServer(port int) {
 	}
 
 	rpc.HandleHTTP()
-	l, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		log.Fatal("listen error:", err)
+	}
+
+	_, err = lockFile.WriteString(string(l.Addr().String()))
+	if err != nil {
+		log.Fatalf("file write error: %v", err)
 	}
 
 	go func() {
