@@ -8,6 +8,7 @@
 ## TODO
 
 - Fix icons not being bundled causing the program to crash
+- Hotkeys not working in the Service searcher
 
 ### Requested
 

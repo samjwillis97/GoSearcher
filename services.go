@@ -4,9 +4,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"log"
+	"runtime"
 )
 
 func startService(s Service) {
@@ -64,24 +66,61 @@ func initServiceSearchWindow(w fyne.Window) {
 			item, _ := i.(binding.Untyped).Get()
 			switch item := item.(type) {
 			case string:
-				o.(*widget.Button).SetText(item)
+				serviceName := item
+
+				var foundService Service
+				for _, val := range Services {
+					if val.Name == serviceName {
+						foundService = val
+					}
+				}
 
 				callBackFn := func() {
-					serviceName := item
-					var foundService Service
-					for _, val := range Services {
-						if val.Name == serviceName {
-							foundService = val
-						}
-					}
-					startService(foundService)
+					found := foundService
+					startService(found)
 					w.Close()
 				}
 
+				o.(*widget.Button).SetText(item)
 				o.(*widget.Button).OnTapped = callBackFn
 			}
 		},
 	)
+
+	var allServices []string
+	for _, val := range getServicesInBindingOrder() {
+		initData = append(initData, val.Name)
+		allServices = append(allServices, val.Name)
+	}
+
+	shortCuts := map[fyne.Shortcut]func(shortcut fyne.Shortcut){}
+	assignedBindings := make(map[string]struct{})
+	modifier := fyne.KeyModifierControl
+	if runtime.GOOS == "darwin" {
+		modifier = fyne.KeyModifierSuper
+	}
+	for _, val := range getServicesInBindingOrder() {
+		boundKey := val.GetServiceKeybinding()
+		if _, ok := assignedBindings[boundKey]; ok {
+			continue
+		}
+
+		assignedBindings[boundKey] = struct{}{}
+		keyBinding := &desktop.CustomShortcut{
+			KeyName:  fyne.KeyName(boundKey),
+			Modifier: modifier,
+		}
+
+		callback := func() {
+			found := val
+			startService(found)
+			w.Close()
+		}
+
+		shortCuts[keyBinding] = func(shortcut fyne.Shortcut) {
+			callback()
+		}
+	}
 
 	content := container.New(layout.NewBorderLayout(
 		input,
@@ -93,50 +132,24 @@ func initServiceSearchWindow(w fyne.Window) {
 		list,
 	)
 
-	w.SetContent(content)
-	w.Resize(fyne.Size{
-		Width:  500,
-		Height: 0,
-	})
-	w.CenterOnScreen()
-
-	w.SetCloseIntercept(func() {
-		w.Close()
-
-		// Clear out memory
-		dataSet = []map[string]string{}
-		searchData = []string{}
-	})
-
-	w.Canvas().Focus(input) // FIXME
-
-	var allServices []string
-	for _, val := range Services {
-		initData = append(initData, val.Name)
-		allServices = append(allServices, val.Name)
-	}
+	// Set Initial List
+	newListHeight := float32(0)
 	if len(initData) > 0 {
 		_ = data.Set(initData)
 
-		maxShown := float32(C.MaxEntries - 1)
+		maxShown := float32(C.MaxEntries)
 		baseListHeight := list.MinSize().Height
-		newListHeight := maxShown * baseListHeight
+		newListHeight = maxShown * baseListHeight
 
 		if len(initData) < int(maxShown) {
-			newListHeight = float32(len(initData)-1) * baseListHeight
+			newListHeight = float32(len(initData)-1)*baseListHeight + 10
 		}
-
-		// Shows Input with 4 List items
-		w.Resize(fyne.Size{
-			Width:  500,
-			Height: content.MinSize().Height + newListHeight,
-		})
 	}
 
 	input.OnChanged = func(text string) {
 		results := allServices
 		if text != "" {
-			results = fuzzySearch(text, results)
+			results = fuzzySearch(text, results, C.Similarity, C.GetSearchAlgorithm())
 		}
 
 		var newData []interface{}
@@ -146,12 +159,12 @@ func initServiceSearchWindow(w fyne.Window) {
 
 		_ = data.Set(newData)
 		if len(newData) > 0 {
-			maxShown := float32(C.MaxEntries - 1)
+			maxShown := float32(C.MaxEntries)
 			baseListHeight := list.MinSize().Height
 			newListHeight := maxShown * baseListHeight
 
 			if len(newData) < int(maxShown) {
-				newListHeight = float32(len(newData)-1) * baseListHeight
+				newListHeight = float32(len(newData)-1)*baseListHeight + 10
 			}
 
 			w.Resize(fyne.Size{
@@ -165,4 +178,17 @@ func initServiceSearchWindow(w fyne.Window) {
 			})
 		}
 	}
+
+	w.SetContent(content)
+	for key, val := range shortCuts {
+		w.Canvas().AddShortcut(key, val)
+	}
+	w.Resize(fyne.Size{
+		Width:  500,
+		Height: content.MinSize().Height + newListHeight,
+	})
+	w.CenterOnScreen()
+
+	w.Canvas().Focus(input)
+
 }

@@ -1,8 +1,12 @@
 configuration:
   maxEntries: 10
+  clearOnHide: false
+  searchAlgorithm: jaro-winkler
+  similarity: 0.4
 services:
   - name: QR Code Generator
     type: qr-code-generator
+    keybinding: z
     qrSettings:
       inputs:
         - id
@@ -12,6 +16,8 @@ services:
     keyBinding: 1
     searchSettings:
       modifier: control
+      algorithm: jaro-winkler
+      similarity: 0.2
     fileSettings:
       source: ./CLIENT_INFO.xlsx
       type: xlsx

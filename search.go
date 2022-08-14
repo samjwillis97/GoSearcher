@@ -22,13 +22,13 @@ func searchCurrentData(search string) []map[string]string {
 	return searchResults
 }
 
-func fuzzySearch(search string, data []string) []string {
+func fuzzySearch(search string, data []string, similarity float32, algorithm edlib.Algorithm) []string {
 	results, err := edlib.FuzzySearchSetThreshold(
 		search,
 		data,
 		C.MaxEntries,
-		0.7,
-		edlib.JaroWinkler,
+		similarity,
+		algorithm,
 	)
 	if err != nil {
 		log.Printf("error fuzzy searching: %v\n", err)
@@ -88,7 +88,6 @@ func initSearchWindow(w fyne.Window, S Service) {
 				}
 
 				callBackFn := func() {
-					// TODO: New Window here !
 					window := createInfoWindow(value, S)
 					if window != nil {
 						window.Show()
@@ -138,6 +137,16 @@ func initSearchWindow(w fyne.Window, S Service) {
 
 	input.OnChanged = func(s string) {
 		results := searchCurrentData(s)
+		//results2 := fuzzySearch(
+		//	s,
+		//	searchData,
+		//	S.SearchSettings.Similarity,
+		//	S.SearchSettings.GetSearchAlgorithm(),
+		//)
+		//for _, r := range results2 {
+		//	results = append(results, dataSet[r])
+		//}
+		//log.Println(results2)
 
 		var newData []interface{}
 		for _, val := range results {
@@ -147,22 +156,20 @@ func initSearchWindow(w fyne.Window, S Service) {
 			}
 			jsonString := string(jsonBytes)
 			// value appended to newData must be comparable
-			// could use indices instead lol
 			newData = append(newData, jsonString)
 		}
 
 		if len(newData) > 0 {
 			_ = data.Set(newData)
 
-			maxShown := float32(C.MaxEntries - 1)
+			maxShown := float32(C.MaxEntries)
 			baseListHeight := list.MinSize().Height
 			newListHeight := maxShown * baseListHeight
 
 			if len(newData) < int(maxShown) {
-				newListHeight = float32(len(newData)-1) * baseListHeight
+				newListHeight = float32(len(newData)-1)*baseListHeight + 10
 			}
 
-			// Shows Input with 4 List items
 			w.Resize(fyne.Size{
 				Width:  500,
 				Height: content.MinSize().Height + newListHeight,

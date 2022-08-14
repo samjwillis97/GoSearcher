@@ -36,10 +36,15 @@ func (l *Listener) OpenService(arg Arg, reply *Reply) error {
 func main() {
 	// TODO: Log Better
 
-	lockFilePath := path.Join(os.TempDir(), "GoSearcher.lock")
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		dir = os.TempDir()
+	}
+	lockFilePath := path.Join(dir, "GoSearcher.lock")
 	lockFile, err := createLockFile(lockFilePath)
 	if err != nil {
 		data, err := os.ReadFile(lockFilePath)
+		log.Printf("Lock file read: %s", lockFilePath)
 		if err != nil {
 			log.Fatalf("error reading lock file: %v", err)
 		}
@@ -54,6 +59,8 @@ func main() {
 		}
 		return
 	}
+
+	log.Printf("Lock file created: %s", lockFile.Name())
 
 	// open a file
 	f, err := os.OpenFile(os.TempDir()+string(os.PathSeparator)+"GoSearcher.log", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
@@ -78,7 +85,6 @@ func main() {
 		readConfig()
 		if a != nil {
 			if desk, ok := a.(desktop.App); ok {
-				//desk.SetSystemTrayIcon()
 				desk.SetSystemTrayMenu(setupTrayMenu())
 			}
 		}
@@ -135,7 +141,7 @@ func createLockFile(filename string) (*os.File, error) {
 			}
 		}
 		return os.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
-	//case "linux":
+	case "linux":
 	case "darwin":
 		file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
@@ -164,12 +170,18 @@ func startRPCServer(lockFile *os.File) {
 		log.Fatal("listen error:", err)
 	}
 
-	_, err = lockFile.WriteString(string(l.Addr().String()))
-	if err != nil {
-		log.Fatalf("file write error: %v", err)
-	}
-
 	go func() {
+		_, err = lockFile.WriteString(string(l.Addr().String()))
+		if err != nil {
+			log.Fatalf("file write error: %v", err)
+		}
+		defer func() {
+			err := lockFile.Close()
+			if err != nil {
+				log.Fatalf("lock file close error: %v", err)
+			}
+		}()
+
 		err := http.Serve(l, nil)
 		if err != nil {
 			log.Fatal("serve error:", err)

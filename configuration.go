@@ -3,21 +3,26 @@ package main
 import (
 	"fmt"
 	"fyne.io/fyne/v2"
+	"github.com/hbollon/go-edlib"
 	"github.com/spf13/viper"
 	"log"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 )
 
 type Configuration struct {
-	MaxEntries  int
-	ClearOnHide bool
+	MaxEntries      int
+	ClearOnHide     bool
+	SearchAlgorithm string
+	Similarity      float32
 }
 
 type Service struct {
 	Name           string
 	Type           string
+	Keybinding     string
 	SearchSettings SearchSettings
 	Fields         []SearchFieldSettings
 	FileSettings   FileSettings
@@ -25,7 +30,9 @@ type Service struct {
 }
 
 type SearchSettings struct {
-	Modifier string
+	Modifier   string
+	Algorithm  string
+	Similarity float32
 }
 
 type SearchFieldSettings struct {
@@ -56,6 +63,17 @@ type QRGeneratorSettings struct {
 
 var C Configuration
 var Services []Service
+
+type ServiceByBinding []Service
+
+func (s ServiceByBinding) Len() int      { return len(s) }
+func (s ServiceByBinding) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s ServiceByBinding) Less(i, j int) bool {
+	iRune := rune(s[i].GetServiceKeybinding()[0])
+	jRune := rune(s[j].GetServiceKeybinding()[0])
+
+	return iRune < jRune
+}
 
 func setupConfig() {
 	configDir, _ := os.UserConfigDir()
@@ -109,8 +127,34 @@ func readConfig() {
 	return
 }
 
+func getServicesInBindingOrder() []Service {
+	sorted := Services
+	sort.Sort(ServiceByBinding(sorted))
+	return sorted
+}
+
+func (c *Configuration) GetSearchAlgorithm() edlib.Algorithm {
+	switch strings.ToLower(c.SearchAlgorithm) {
+	case "jaro-winkler":
+		return edlib.JaroWinkler
+	case "levenshtein":
+		return edlib.Levenshtein
+	case "damerau-levenshtein":
+		return edlib.DamerauLevenshtein
+	case "hamming":
+		return edlib.Hamming
+	case "jaro":
+		return edlib.Jaro
+	}
+	return edlib.Levenshtein
+}
+
 func (s *Service) GetServiceType() string {
 	return strings.ToLower(s.Type)
+}
+
+func (s *Service) GetServiceKeybinding() string {
+	return strings.ToLower(s.Keybinding[0:1])
 }
 
 func (s *Service) GetSourceFilePath() string {
@@ -210,4 +254,20 @@ func (f *SearchFieldSettings) GetDisplayName() string {
 
 func (f *SearchFieldSettings) GetKeyBinding() string {
 	return strings.ToUpper(f.KeyBinding)
+}
+
+func (s *SearchSettings) GetSearchAlgorithm() edlib.Algorithm {
+	switch strings.ToLower(s.Algorithm) {
+	case "jaro-winkler":
+		return edlib.JaroWinkler
+	case "levenshtein":
+		return edlib.Levenshtein
+	case "damerau-levenshtein":
+		return edlib.DamerauLevenshtein
+	case "hamming":
+		return edlib.Hamming
+	case "jaro":
+		return edlib.Jaro
+	}
+	return edlib.Levenshtein
 }
